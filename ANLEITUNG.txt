@@ -1,0 +1,130 @@
+HAUSAUFGABENHEFT (SCHÜLER-APP FÜRS IPAD) – ANLEITUNG
+====================================================
+
+Was ist das Hausaufgabenheft?
+-----------------------------
+Eine kleine App für die Schüler-iPads: Stundenplan ansehen, Hausaufgabenheft
+mit Abhaken, Proben mit Countdown und eigene Notizen. Die Lehrkraft schickt
+Stundenplan, Hausaufgaben und Proben aus dem Klassenmanager per QR-Code.
+
+Datenschutz
+-----------
+- Alle Einträge bleiben NUR auf dem jeweiligen iPad (im Speicher der App).
+- Es wird nichts ins Internet geschickt, es gibt kein Konto und keinen Server.
+- Die QR-Codes enthalten keine Schülernamen – nur Stundenplan, Hausaufgaben
+  und Proben der Klasse.
+- Der Kamerazugriff wird nur beim Scannen genutzt; es werden keine Bilder gespeichert.
+
+
+1. Einmalig: online stellen (z. B. GitHub Pages)
+------------------------------------------------
+Genauso wie beim Klassenmanager, aber als EIGENES Repository, z. B. „hausaufgabenheft“ (ein schon angelegtes Repository „schulplaner“ kann einfach bleiben):
+Den INHALT dieses Ordners hochladen (index.html, manifest.webmanifest, sw.js,
+Ordner icons) → Settings → Pages → Branch „main“, „/ (root)“ → Save.
+Adresse dann z. B.: https://DEINNAME.github.io/hausaufgabenheft/
+
+Tipp: Die Adresse als QR-Code an die Tafel zeigen, dann müssen die Kinder sie
+nicht abtippen.
+
+
+2. Auf den Schüler-iPads installieren
+-------------------------------------
+Safari öffnen → Adresse aufrufen → Teilen-Knopf → „Zum Home-Bildschirm“.
+WICHTIG: Die App immer über das Symbol auf dem Home-Bildschirm starten.
+(Safari und die installierte App haben getrennte Speicher. Außerdem löscht
+iPadOS Daten von Webseiten, die nur in Safari geöffnet werden, nach einigen
+Wochen ohne Nutzung – bei der installierten App passiert das nicht.)
+
+Werden die iPads zentral verwaltet (MDM, z. B. Jamf oder Relution), kann die
+IT-Betreuung die Adresse als Web-App direkt auf alle iPads verteilen.
+
+
+3. Stundenplan, Hausaufgaben und Proben schicken
+------------------------------------------------
+Im Klassenmanager (Stundenplan oder Klassenliste): „📲 An Schüler“ →
+auswählen, was geschickt werden soll → „⛶ Groß anzeigen“ (für den Beamer).
+Die Kinder tippen im Hausaufgabenheft auf „📷 Empfangen“ und halten das iPad auf
+den Code. Bei viel Inhalt wechseln mehrere Codes automatisch – einfach
+draufhalten, bis „Übernehmen“ erscheint.
+
+- Beim ersten Mal fragt das iPad nach der Kamera → „Erlauben“.
+- Erneut senden ist jederzeit möglich: Neue Hausaufgaben kommen dazu, geänderte
+  werden aktualisiert. Häkchen, eigene Einträge und Notizen der Kinder bleiben.
+- Ohne Kamera: Foto vom Code machen und in der Kamera-Ansicht
+  „🖼 Foto wählen“ antippen.
+
+
+4. Was die Kinder selbst machen können
+--------------------------------------
+- Hausaufgaben abhaken, eigene Hausaufgaben und Proben eintragen
+  (das Fälligkeitsdatum wird nach dem Stundenplan vorgeschlagen)
+- zu jedem Eintrag eine eigene Notiz schreiben (✎ antippen)
+- bei geteilten Stunden die eigene Gruppe wählen (Stunde antippen)
+- im Stundenplan wochenweise blättern
+- ⚙ → Sicherung speichern/laden (z. B. bei neuem iPad) oder alle Daten löschen
+
+- 🎒 Packliste: im Stundenplan steht über dem nächsten Schultag „🎒 2/7“
+  (bzw. neben dem Wochen-Umschalter). Antippen öffnet die Liste. Unter „✎“ trägt das Kind einmal
+  das Material pro Fach ein (z. B. „Buch, Heft, Atlas“) und hakt beim Packen ab.
+- 📣 Mitteilungen vom Lehrer erscheinen neben dem Stundenplan über der Packliste,
+  bis „✓ Gelesen“ getippt wird.
+- 🔔 Erinnerungen (⚙): Zahl offener Hausaufgaben am App-Symbol; tägliche
+  Erinnerung und Proben/Termine als Kalender-Eintrag – der Kalender des iPads
+  erinnert dann auch bei geschlossener App. (Eine Web-App kann ohne Server
+  keine eigenen zeitgesteuerten Benachrichtigungen schicken.)
+
+Abgehakte Hausaufgaben bleiben (mit Häkchen) stehen, bis der Abgabetag erreicht
+ist (13 Uhr), dann wandern sie unter „Erledigt“. Überfällige, nicht abgehakte
+Hausaufgaben bleiben neben dem Stundenplan sichtbar, bis sie abgehakt sind. Proben verschwinden am
+Probentag um 13 Uhr. Ferien und Feiertage (Bayern) sind im Stundenplan grau.
+
+
+5. Aktualisieren
+-------------
+Neue index.html bei GitHub hochladen (gleicher Name). Nach 1–2 Minuten ist sie
+online (GitHub → Reiter „Actions“: grüner Haken = fertig).
+Ab dieser Version lädt die App beim Start immer die neueste Fassung, sobald
+Internet da ist. Die Versionsnummer steht unter ⚙.
+Falls doch noch die alte Version erscheint: App ganz schließen (vom unteren
+Rand nach oben wischen, App nach oben wegschieben) und neu öffnen.
+
+
+
+6. Neuer Name
+-------------
+Die App heißt jetzt „Hausaufgabenheft“. Auf iPads, auf denen sie schon
+installiert ist, bleibt der alte Name unter dem Symbol stehen (iPadOS übernimmt
+ihn nur beim Hinzufügen). Wer den neuen Namen möchte: Sicherung speichern (⚙),
+Symbol löschen, über Safari neu „Zum Home-Bildschirm“ hinzufügen, Sicherung laden.
+Die Einträge bleiben aber auch ohne das erhalten.
+
+- 14-täglicher Wechsel: Ferien und Feiertage zählen nicht mit. An freien Tagen steht
+  im Stundenplan der Name der Ferien bzw. des Feiertags statt der Fächer.
+
+Mit der Klasse verbinden (OneDrive): „📷 Empfangen“ und den Verbindungs-Code der Lehrkraft
+scannen, dann mit dem Schulkonto anmelden. Ab dann holt die App Änderungen der Lehrkraft
+beim Öffnen selbst – oder mit 🔄 oben. Eigene Einträge bleiben nur auf dem iPad.
+Solange die App offen ist, schaut sie alle 30 Sekunden nach neuen Einträgen der Lehrkraft.
+Automatische Sicherung: Ist die App mit der Klasse verbunden und angemeldet, legt sie nach
+Änderungen eine Sicherung im eigenen Schul-OneDrive ab (Ordner „Hausaufgabenheft“).
+Nach dem Zurücksetzen des iPads: Verbindungs-Code scannen, anmelden – die App bietet die
+Sicherung zum Wiederherstellen an (oder Einstellungen → „☁️ Sicherung aus OneDrive laden“).
+Ferien-Countdown: Neben „Demnächst“ steht, wie viele Schultage es noch bis zu den nächsten Ferien sind.
+
+NEU in Version 2026-11-10: 📅 Kalender
+Neuer Reiter „📅 Kalender“: Monatsübersicht mit Proben, Terminen und Hausaufgaben (◀ ▶ blättern,
+„Heute“). Einen Tag antippen: unten stehen alle Einträge dieses Tages. Dort tragen die Kinder
+eigene Termine (⭐, z. B. Training, Geburtstag – mit Uhrzeit) oder Proben ein. Eigene Termine
+bleiben nur auf dem iPad (und in der eigenen OneDrive-Sicherung) und werden von Einträgen der
+Lehrkraft nie gelöscht. Einträge antippen = bearbeiten oder löschen.
+
+NEU in Version 2026-11-11: ☁️ Einträge über das eigene OneDrive abgleichen
+Ist die App mit der Klasse verbunden und angemeldet, liegen die Einträge des Kindes nicht mehr nur
+auf dem iPad, sondern zusätzlich im eigenen Schul-OneDrive (Ordner „Hausaufgabenheft“). Jedes Symbol
+der App – z. B. eines im Schulmodus und eines im Privatmodus – holt beim Öffnen den neuesten Stand,
+führt ihn mit dem iPad zusammen und speichert Änderungen wenige Sekunden später wieder dorthin.
+Bei gleichzeitigen Änderungen gewinnt die neuere; Löschungen werden mitgenommen. Ein neu eingerichtetes
+Symbol übernimmt die Einträge sofort (Verbindungs-Code scannen, anmelden – fertig).
+Symbol oben neben 🔄:  ☁️✓ grün = alles gespeichert · ↻ grau = wird abgeglichen ·
+!-orange = kein Internet (wird später abgeglichen) · !-rot = bitte antippen (anmelden bzw. erneut versuchen).
+Die Datei sieht nur das Kind selbst; sie wird nicht geteilt. Ohne Internet arbeitet die App ganz normal weiter.
