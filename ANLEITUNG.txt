@@ -128,3 +128,23 @@ Symbol übernimmt die Einträge sofort (Verbindungs-Code scannen, anmelden – f
 Symbol oben neben 🔄:  ☁️✓ grün = alles gespeichert · ↻ grau = wird abgeglichen ·
 !-orange = kein Internet (wird später abgeglichen) · !-rot = bitte antippen (anmelden bzw. erneut versuchen).
 Die Datei sieht nur das Kind selbst; sie wird nicht geteilt. Ohne Internet arbeitet die App ganz normal weiter.
+
+NEU in Version 2026-11-12: 🗳 Abstimmen und 🌐 Klasse ohne Anmeldung
+- 🗳 oben in der Kopfzeile: an Abstimmungen der Lehrkraft teilnehmen. Die drei Symbole an der
+  Tafel der Reihe nach antippen (⌫ = letztes löschen), dann antworten. Häkchen „Deine Stimme
+  ist angekommen“; bis zum Ende änderbar. Bei der Wortwolke bis zu 3 Wörter senden (erscheinen
+  erst nach Freigabe durch die Lehrkraft). Anonym, Internet nötig.
+- Klasse ohne Anmeldung (GitHub): Hat die Lehrkraft die Klasse über GitHub veröffentlicht,
+  enthält die App-Adresse den Zusatz ?k=… Als Webclip eingerichtet (Jamf), holt die App bei
+  jedem Start Stundenplan, Hausaufgaben, Proben/Termine und Mitteilungen der Lehrkraft – auch
+  wenn das iPad seinen Speicher gelöscht hat (z. B. Wechsel Schul-/Privatmodus). Alternativ
+  einmal den Verbindungs-Code der Lehrkraft scannen. Es ist keine Anmeldung nötig; 🔄 holt
+  sofort den neuesten Stand, sonst automatisch jede Minute.
+- Hinweis: Eigene Einträge der Kinder liegen weiterhin nur auf dem iPad; wenn der Speicher
+  gelöscht wird, sind diese weg (die Einträge der Lehrkraft kommen wieder).
+- ☁️ Meine Einträge sichern (Einstellungen ⚙): Die Sicherung der eigenen Einträge im eigenen
+  Schul-OneDrive funktioniert jetzt auch ohne OneDrive-Verbindung zur Klasse – also auch, wenn die
+  Klasse über GitHub/Webclip kommt. „☁️ Meine Einträge im OneDrive sichern – anmelden“ antippen und
+  mit dem Schulkonto anmelden. Danach wird automatisch abgeglichen (Symbol ☁️ oben).
+  Hat das iPad seinen Speicher gelöscht: wieder dort anmelden – die eigenen Einträge sind zurück.
+  „Sicherung ausschalten“ beendet den Abgleich (die Datei im OneDrive bleibt erhalten).
