@@ -277,6 +277,13 @@
   .vote-grid { gap: 6px; }
   .vote-slot { width: 72px; height: 72px; }
 }
+.vote-ans.vote-col { grid-template-columns: 1fr; }
+.vote-ans.vote-col button { min-height: 54px; font-size: 1.25rem; text-align: left; padding-left: 18px; }
+.vote-hint { color: #475569; font-size: .95rem; }
+.vote-wait2 { font-size: 1.2rem; font-weight: 700; color: #166534; background: #dcfce7; border-radius: 14px; padding: 14px; line-height: 1.5; }
+.vote-wait2 small, .vote-end small { font-weight: 400; color: #475569; font-size: .85rem; }
+#voteBtn.on { background: #dcfce7; border-color: #16a34a; box-shadow: inset 0 0 0 2px #16a34a; }
+.vote-foot { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -397,7 +404,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-11-12</p>
+    <p class="hint">Version 2026-11-13</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>
@@ -452,7 +459,9 @@
       <h3 id="voteQ">Abstimmung</h3>
       <div class="vote-ans" id="voteAns"></div>
       <p class="vote-ok" id="voteOk" role="status" hidden></p>
-      <p class="vote-end" id="voteEnd" hidden>Die Abstimmung ist beendet. Danke! ✓</p>
+      <p class="vote-hint" id="voteHint" hidden></p>
+      <p class="vote-end" id="voteEnd" hidden>Die Abstimmung ist beendet. Danke! ✓<br><small>Du bleibst verbunden – die nächste Frage erscheint von selbst.</small></p>
+      <p class="vote-wait2" id="voteWaitP" hidden>✓ Du bist dabei.<br>Warte auf die nächste Frage …<br><small>Du kannst das Fenster schließen – es öffnet sich bei der nächsten Frage von selbst.</small></p>
       <div class="vote-words" id="voteWords" hidden>
         <form class="vote-wform" id="voteWordForm" autocomplete="off">
           <input id="voteWordIn" maxlength="20" enterkeyhint="send" placeholder="Wort eingeben" aria-label="Wort eingeben">
@@ -465,6 +474,7 @@
     </div>
 
     <div class="vote-foot">
+      <button type="button" id="voteLeave" hidden>Abstimmung verlassen</button>
       <button type="button" id="voteClose">Schließen</button>
     </div>
   </div>
@@ -1514,7 +1524,8 @@ if ((location.protocol === 'https:' || location.hostname === 'localhost') && 'se
 /* ---------- 🗳 Abstimmung ---------- */
 (function () {
 'use strict';
-
+/* Die Kinder bleiben in der Abstimmungsrunde der Tafel: Neue Fragen erscheinen sofort, auch wenn das Fenster geschlossen war.
+   Die Runde endet, wenn die Lehrkraft sie beendet (oder nach 10 Minuten ohne Frage) – oder mit „Abstimmung verlassen“. */
 const HV_SYM = ['🍎', '🚀', '⭐', '🐟', '🌻', '🎈', '🐢', '⚽', '🔔', '🌙'];
 const HV_NAMES = ['Apfel', 'Rakete', 'Stern', 'Fisch', 'Sonnenblume', 'Ballon', 'Schildkröte', 'Ball', 'Glocke', 'Mond'];
 const HV_PREFIX = 'jpw-theres-klassenmanager-v-';
@@ -1525,6 +1536,7 @@ const HV_MSG_NET = 'Keine Verbindung – Internet prüfen.';
 const HV_MSG_NONE = 'Unter diesen Symbolen läuft gerade keine Abstimmung.';
 const HV_MSG_TIMEOUT = 'Das Netz lässt keine Verbindung zu.';
 const HV_MSG_LOST = 'Verbindung unterbrochen';
+const HV_MSG_BYE = 'Die Abstimmungsrunde ist beendet.';
 
 const hvEl = id => $(id) || null;
 const hvT = (id, txt) => { const e = hvEl(id); if (e) e.textContent = txt; };
@@ -1536,52 +1548,36 @@ function hvLoadPeer() {
   if (!window.Peer && t) { const sc = document.createElement('script'); sc.textContent = t.textContent; document.head.appendChild(sc); }
   return window.Peer;
 }
-
 let hvMem = '';
 function hvRnd() { return Math.random().toString(36).slice(2, 12) + Date.now().toString(36); }
 function hvDev() {
-  try {
-    let d = localStorage.getItem('hh-vote-dev');
-    if (!d) { d = hvRnd(); localStorage.setItem('hh-vote-dev', d); }
-    return d;
-  } catch (e) { return hvMem || (hvMem = hvRnd()); }
+  try { let d = localStorage.getItem('hh-vote-dev'); if (!d) { d = hvRnd(); localStorage.setItem('hh-vote-dev', d); } return d; }
+  catch (e) { return hvMem || (hvMem = hvRnd()); }
 }
-
-function hvBlank() {
-  return { code: '', dev: '', peer: null, conn: null, timer: null, poll: null, open: false, retried: false,
-    words: [], pending: null, answered: false };
-}
-let st = hvBlank();
-let codes = [];
+function hvBlank() { return { code: '', dev: '', peer: null, conn: null, timer: null, poll: null, wait: false, open: false, retried: false, words: [], pending: null, answered: false }; }
+let st = hvBlank(), codes = [];
+const hvIn = () => !!(st.poll || st.wait);   // in einer Runde
 
 function hvStep(s) { ['Pick', 'Conn', 'Poll'].forEach(k => hvH('voteStep' + k, k.toLowerCase() !== s)); }
 function hvSlots() { for (let k = 0; k < 3; k++) hvT('voteSlot' + k, k < codes.length ? HV_SYM[codes[k]] : '·'); }
 function hvErrMsg(msg) { hvT('voteErr', msg || ''); }
 function hvStatus(msg) { hvT('voteStatus', msg || ''); }
+function hvBtn() { const b = hvEl('voteBtn'); if (b) { b.classList.toggle('on', hvIn()); b.title = hvIn() ? 'Abstimmung (verbunden)' : 'Abstimmen'; } hvH('voteLeave', !hvIn()); }
+function hvShow() { const d = hvEl('voteDlg'); if (d) d.hidden = false; }
 
 function hvTeardown() {
   clearTimeout(st.timer);
   const p = st.peer;
   st = hvBlank();
-  if (p) { try { p.destroy(); } catch (e) { /* ignore */ } }
+  if (p) { try { p.destroy(); } catch (e) {} }
+  hvBtn();
 }
-
-function hvReset() {
-  hvTeardown(); codes = []; hvSlots(); hvErrMsg(''); hvStatus(''); hvStep('pick');
-}
-
-// Fehler: während der Abstimmung nur Statuszeile, sonst zurück zur Symbolauswahl
+function hvReset() { hvTeardown(); codes = []; hvSlots(); hvErrMsg(''); hvStatus(''); hvStep('pick'); }
 function hvFail(msg) {
-  if (st.poll) { hvStatus(msg); return; }
+  if (hvIn() && msg !== HV_MSG_BYE) { hvStatus(msg); return; }
   hvTeardown(); codes = []; hvSlots(); hvStep('pick'); hvErrMsg(msg);
 }
-
-function hvTap(i) {
-  if (codes.length >= 3) return;
-  hvErrMsg('');
-  codes.push(i); hvSlots();
-  if (codes.length === 3) hvConnect(codes.join(''));
-}
+function hvTap(i) { if (codes.length >= 3) return; hvErrMsg(''); codes.push(i); hvSlots(); if (codes.length === 3) hvConnect(codes.join('')); }
 function hvDel() { codes.pop(); hvSlots(); hvErrMsg(''); }
 
 function hvConnect(code) {
@@ -1591,145 +1587,136 @@ function hvConnect(code) {
   const Peer = hvLoadPeer();
   if (!Peer) { hvFail(HV_MSG_NET); return; }
   let peer;
-  try { peer = new Peer(Object.assign({ debug: 0 }, window.RC_SERVER || {})); }
-  catch (e) { hvFail(HV_MSG_NET); return; }
+  try { peer = new Peer(Object.assign({ debug: 0 }, window.RC_SERVER || {})); } catch (e) { hvFail(HV_MSG_NET); return; }
   st.peer = peer;
   peer.on('open', () => { if (st.peer === peer) hvDial(); });
-  peer.on('error', err => {
-    if (st.peer !== peer) return;
-    hvFail(err && err.type === 'peer-unavailable' ? HV_MSG_NONE : HV_MSG_NET);
-  });
+  peer.on('error', err => { if (st.peer !== peer) return; hvFail(err && err.type === 'peer-unavailable' ? (hvIn() ? HV_MSG_BYE : HV_MSG_NONE) : HV_MSG_NET); });
+  peer.on('disconnected', () => { if (st.peer === peer && !peer.destroyed) setTimeout(() => { if (st.peer === peer && !peer.destroyed) peer.reconnect(); }, 2000); });
 }
-
 function hvDial() {
-  const peer = st.peer;
-  if (!peer) return;
+  const peer = st.peer; if (!peer) return;
   const conn = peer.connect(HV_PREFIX + st.code, { reliable: true });
   st.conn = conn;
   clearTimeout(st.timer);
-  st.timer = setTimeout(() => {
-    if (st.conn === conn && !st.open) hvFail(st.poll ? HV_MSG_LOST : HV_MSG_TIMEOUT);
-  }, 15000);
-  conn.on('open', () => {
-    if (st.conn !== conn) return;
-    clearTimeout(st.timer); st.open = true;
-    conn.send({ c: 'join', dev: st.dev });
-  });
+  st.timer = setTimeout(() => { if (st.conn === conn && !st.open) hvFail(hvIn() ? HV_MSG_LOST : HV_MSG_TIMEOUT); }, 15000);
+  conn.on('open', () => { if (st.conn !== conn) return; clearTimeout(st.timer); st.open = true; st.retried = false; conn.send({ c: 'join', dev: st.dev }); });
   conn.on('data', m => { if (st.conn === conn && m) hvMsg(m); });
   conn.on('close', () => {
     if (st.conn !== conn) return;
     st.open = false; clearTimeout(st.timer);
-    if (st.poll && !st.poll.open) return;
-    if (st.poll && !st.retried) {
-      st.retried = true;
-      setTimeout(() => { if (st.peer === peer) hvDial(); }, 2000);
-      return;
-    }
-    hvFail(HV_MSG_LOST);
+    if (hvIn() && !st.retried) { st.retried = true; setTimeout(() => { if (st.peer === peer) hvDial(); }, 2000); return; }   // kurz weg: einmal neu verbinden
+    hvFail(hvIn() ? HV_MSG_BYE : HV_MSG_LOST);
   });
 }
-
 function hvMsg(m) {
   if (m.t === 'poll') {
-    st.poll = m; st.retried = false; st.pending = null;
-    st.words = Array.isArray(m.my) ? m.my.map(String) : [];
-    st.answered = m.type === 'words' ? st.words.length > 0 : m.my != null;
-    hvStatus(''); hvPoll();
+    const isNew = !st.poll || st.poll.pid !== m.pid;
+    st.poll = m; st.wait = false; st.pending = null;
+    if (m.type === 'words') st.words = Array.isArray(m.my) ? m.my.map(String) : [];
+    st.answered = m.type === 'words' ? st.words.length > 0 : (Array.isArray(m.my) ? m.my.length > 0 : m.my != null);
+    hvStatus(''); hvPoll(); hvBtn();
+    if (isNew && m.open) hvShow();   // neue Frage: Fenster von selbst öffnen
+  } else if (m.t === 'wait') {
+    st.poll = null; st.wait = true; hvStatus(''); hvWait(); hvBtn();
   } else if (m.t === 'closed') {
-    if (!st.poll) { hvFail(HV_MSG_NONE); return; }
+    if (!st.poll) { if (!st.wait) hvFail(HV_MSG_NONE); return; }
     st.poll.open = false; hvPoll();
   } else if (m.t === 'ok') {
     if (st.poll && st.poll.type === 'words' && st.pending) { st.words.push(st.pending); st.pending = null; }
     st.answered = true; hvPoll();
+  } else if (m.t === 'max') {
+    st.pending = null; hvWords();
+  } else if (m.t === 'bye') {
+    hvFail(HV_MSG_BYE);
   }
 }
-
 function hvSend(m) {
   if (st.conn && st.conn.open) { st.conn.send(m); return true; }
   hvStatus(HV_MSG_LOST);
   return false;
 }
-
+function hvWait() {
+  hvStep('poll');
+  hvT('voteQ', '🗳 Abstimmungsrunde');
+  ['voteAns', 'voteWords', 'voteOk', 'voteEnd', 'voteHint'].forEach(id => hvH(id, true));
+  hvH('voteWaitP', false);
+}
 function hvPoll() {
   const p = st.poll;
   if (!p) return;
   hvStep('poll');
-  const words = p.type === 'words';
-  const ended = !p.open;
-  const num = HV_NUM.includes(p.type);
+  hvH('voteWaitP', true);
+  const words = p.type === 'words', ended = !p.open, num = HV_NUM.includes(p.type), max = p.max > 1 ? p.max : 1;
+  const my = max > 1 ? (Array.isArray(p.my) ? p.my : []) : p.my;
   hvT('voteQ', p.q || 'Abstimmung');
   hvH('voteAns', words);
   hvH('voteWords', !words);
   hvH('voteEnd', !ended);
+  hvH('voteHint', words || ended || max < 2);
+  hvT('voteHint', `Du kannst bis zu ${max} Antworten wählen (${max > 1 ? my.length : 0} gewählt).`);
   hvH('voteOk', !st.answered || ended);
-  hvT('voteOk', words ? '✓ Dein Wort ist angekommen.'
-    : '✓ Deine Stimme ist angekommen – du kannst sie bis zum Ende noch ändern.');
+  hvT('voteOk', words ? '✓ Dein Wort ist angekommen.' : max > 1 ? '✓ Deine Stimmen sind angekommen – du kannst sie bis zum Ende noch ändern.' : '✓ Deine Stimme ist angekommen – du kannst sie bis zum Ende noch ändern.');
   if (!words) {
     const box = hvEl('voteAns');
     if (box) {
       box.textContent = '';
-      box.className = 'vote-ans' + (num ? ' vote-row' : '');
+      box.className = 'vote-ans' + (num ? ' vote-row' : p.type === 'list' ? ' vote-col' : '');
       (Array.isArray(p.opts) ? p.opts : []).forEach((lab, i) => {
         const b = document.createElement('button');
-        b.type = 'button';
-        b.dataset.v = String(i);
-        b.textContent = String(lab);
-        b.className = [HV_EMO.includes(p.type) ? 'vote-emo' : num ? 'vote-num' : '',
-          p.my != null && +p.my === i ? 'on' : ''].join(' ').trim();
-        b.disabled = ended;
+        b.type = 'button'; b.dataset.v = String(i); b.textContent = String(lab);
+        const sel = max > 1 ? my.includes(i) : my != null && +my === i;
+        b.className = [HV_EMO.includes(p.type) ? 'vote-emo' : num ? 'vote-num' : '', sel ? 'on' : ''].join(' ').trim();
+        b.disabled = ended || (max > 1 && !sel && my.length >= max);
         box.appendChild(b);
       });
     }
   }
   hvWords();
 }
-
 function hvWords() {
-  const p = st.poll;
-  const ended = !p || !p.open;
+  const p = st.poll, ended = !p || !p.open;
   const list = hvEl('voteWordList');
-  if (list) {
-    list.textContent = '';
-    st.words.forEach(w => { const li = document.createElement('li'); li.textContent = w; list.appendChild(li); });
-  }
+  if (list) { list.textContent = ''; st.words.forEach(w => { const li = document.createElement('li'); li.textContent = w; list.appendChild(li); }); }
   const left = Math.max(0, HV_MAX_WORDS - st.words.length - (st.pending ? 1 : 0));
   hvT('voteWordCnt', ended ? '' : 'noch ' + left + (left === 1 ? ' Wort' : ' Wörter'));
   const inp = hvEl('voteWordIn'), btn = hvEl('voteWordBtn');
   if (inp) inp.disabled = ended || left === 0;
   if (btn) btn.disabled = ended || left === 0 || !!st.pending;
 }
-
 function hvAnswer(e) {
   const b = e.target && e.target.closest ? e.target.closest('button[data-v]') : null;
   const p = st.poll;
   if (!b || b.disabled || !p || !p.open) return;
   const v = +b.dataset.v;
-  hvSend({ c: 'ans', dev: st.dev, pid: p.pid, v });
-  p.my = v; hvPoll();
+  if (p.max > 1) {
+    const my = Array.isArray(p.my) ? p.my.slice() : [], k = my.indexOf(v);
+    if (k >= 0) my.splice(k, 1); else if (my.length < p.max) my.push(v); else return;
+    if (!hvSend({ c: 'ans', dev: st.dev, pid: p.pid, v: my })) return;
+    p.my = my; st.answered = my.length > 0;
+  } else {
+    if (!hvSend({ c: 'ans', dev: st.dev, pid: p.pid, v })) return;
+    p.my = v;
+  }
+  hvPoll();
 }
-
 function hvWordSubmit(e) {
   e.preventDefault();
-  const inp = hvEl('voteWordIn');
-  const p = st.poll;
+  const inp = hvEl('voteWordIn'), p = st.poll;
   if (!inp || !p || !p.open || st.pending) return;
   const text = inp.value.trim().slice(0, 20).trim();
   if (!text || st.words.length >= HV_MAX_WORDS) return;
-  if (hvSend({ c: 'word', dev: st.dev, pid: p.pid, text })) {
-    st.pending = text; inp.value = ''; hvWords();
-  }
+  if (hvSend({ c: 'word', dev: st.dev, pid: p.pid, text })) { st.pending = text; inp.value = ''; hvWords(); }
 }
-
 function openVote() {
-  hvReset();
-  const d = hvEl('voteDlg');
-  if (d) d.hidden = false;
+  if (!hvIn()) hvReset();
+  hvShow();
 }
+// Schließen: In der Runde bleibt die Verbindung bestehen (nächste Frage öffnet das Fenster wieder)
 function hvClose() {
-  hvReset();
-  const d = hvEl('voteDlg');
-  if (d) d.hidden = true;
+  if (!hvIn()) hvReset();
+  const d = hvEl('voteDlg'); if (d) d.hidden = true;
 }
+function hvLeave() { hvReset(); const d = hvEl('voteDlg'); if (d) d.hidden = true; }
 window.openVote = openVote;
 
 const hvGrid = hvEl('voteGrid');
@@ -1740,17 +1727,15 @@ if (hvGrid) {
     b.textContent = s; b.title = HV_NAMES[i]; b.setAttribute('aria-label', HV_NAMES[i]);
     hvGrid.appendChild(b);
   });
-  hvGrid.addEventListener('click', e => {
-    const b = e.target && e.target.closest ? e.target.closest('button[data-i]') : null;
-    if (b) hvTap(+b.dataset.i);
-  });
+  hvGrid.addEventListener('click', e => { const b = e.target && e.target.closest ? e.target.closest('button[data-i]') : null; if (b) hvTap(+b.dataset.i); });
 }
 hvOn('voteBtn', 'click', openVote);
 hvOn('voteClose', 'click', hvClose);
+hvOn('voteLeave', 'click', hvLeave);
 hvOn('voteDel', 'click', hvDel);
 hvOn('voteAns', 'click', hvAnswer);
 hvOn('voteWordForm', 'submit', hvWordSubmit);
-hvSlots();
+hvSlots(); hvBtn();
 })();
 </script>
 </body>

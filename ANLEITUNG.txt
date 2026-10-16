@@ -148,3 +148,12 @@ NEU in Version 2026-11-12: 🗳 Abstimmen und 🌐 Klasse ohne Anmeldung
   mit dem Schulkonto anmelden. Danach wird automatisch abgeglichen (Symbol ☁️ oben).
   Hat das iPad seinen Speicher gelöscht: wieder dort anmelden – die eigenen Einträge sind zurück.
   „Sicherung ausschalten“ beendet den Abgleich (die Datei im OneDrive bleibt erhalten).
+
+NEU in Version 2026-11-13: 🗳 In der Abstimmung bleiben
+- Die drei Symbole nur einmal antippen: Das iPad bleibt mit der Tafel verbunden (🗳 oben ist grün).
+  Jede neue Frage der Lehrkraft erscheint von selbst – auch wenn das Fenster geschlossen war.
+  Zwischen zwei Fragen steht „Warte auf die nächste Frage …“.
+- Bei „Eigene Antworten“ (z. B. Klassensprecherwahl) erscheinen die Antworten als Liste; je nach
+  Einstellung der Lehrkraft dürfen bis zu 3 angetippt werden (nochmal antippen = abwählen).
+- Die Verbindung endet, wenn die Lehrkraft die Runde beendet (spätestens 10 Minuten nach der letzten
+  Frage) oder mit „Abstimmung verlassen“.
