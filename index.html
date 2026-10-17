@@ -49,6 +49,7 @@
   header h1 { margin: 0; font-size: 1.5rem; color: var(--red); }
   header .cls { color: var(--muted); font-weight: 600; }
   header .sp { flex: 1; }
+  header .hsep { width: 1px; align-self: stretch; margin: 6px 6px; background: #cbd5e1; }
   nav.tabs { display: flex; gap: 6px; background: #e9ebe7; padding: 5px; border-radius: 14px; margin: 14px 0; }
   nav.tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-size: 1.05rem; padding: 10px 6px; }
   nav.tabs button.on { background: #fff; color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.08), inset 0 -3px 0 var(--sun); }
@@ -293,8 +294,9 @@
     <h1>Hausaufgabenheft</h1>
     <span class="cls" id="clsLbl"></span>
     <span class="sp"></span>
-    <button id="cloudSt" class="cloudst" hidden title="Abgleich mit deinem OneDrive">☁️<i></i></button>
     <button id="voteBtn" title="Abstimmen">🗳</button>
+    <span class="hsep" aria-hidden="true"></span>
+    <button id="cloudSt" class="cloudst" hidden title="Abgleich mit deinem OneDrive">☁️<i></i></button>
     <button id="syncBtn" hidden title="Neuesten Stand der Lehrkraft holen">🔄</button>
     <button class="primary" id="scanBtn">📷 Empfangen</button>
     <button id="setBtn" title="Einstellungen">⚙</button>
@@ -404,7 +406,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-11-13</p>
+    <p class="hint">Version 2026-11-14</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>

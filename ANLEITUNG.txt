@@ -157,3 +157,7 @@ NEU in Version 2026-11-13: 🗳 In der Abstimmung bleiben
   Einstellung der Lehrkraft dürfen bis zu 3 angetippt werden (nochmal antippen = abwählen).
 - Die Verbindung endet, wenn die Lehrkraft die Runde beendet (spätestens 10 Minuten nach der letzten
   Frage) oder mit „Abstimmung verlassen“.
+
+NEU in Version 2026-11-14
+- Kopfzeile neu geordnet: 🗳 Abstimmen steht jetzt links, abgesetzt durch einen Trennstrich von den
+  Knöpfen fürs Speichern/Abgleichen (☁️, 🔄) und „📷 Empfangen“.
