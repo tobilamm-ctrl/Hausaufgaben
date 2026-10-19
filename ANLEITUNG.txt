@@ -168,3 +168,8 @@ NEU in Version 2026-11-15
 - 🎯 Klassenziel: Wenn deine Lehrkraft ein Klassenziel freigibt, siehst du rechts neben dem Stundenplan,
   wie weit eure Klasse schon ist – und wenn es geschafft ist, gibt es Konfetti. Gibt es kein Ziel,
   erscheint auch nichts.
+
+NEU in Version 2026-11-16
+- ☁️ und 🔄 bleiben jetzt ruhig: Das regelmäßige Nachsehen im Hintergrund (Lehrerdatei, eigene Sicherung)
+  passiert unsichtbar. ☁️ dreht sich nur noch, wenn wirklich etwas gespeichert wird; ⏳ erscheint nur,
+  wenn du 🔄 selbst antippst. Das Nachsehen beim Lehrer löst außerdem keine unnötige Sicherung mehr aus.

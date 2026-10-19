@@ -419,7 +419,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-11-15</p>
+    <p class="hint">Version 2026-11-16</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>
@@ -1275,7 +1275,7 @@ const shareId = url => 'u!' + btoa(unescape(encodeURIComponent(url))).replace(/=
 // Stand der Lehrkraft holen. manual = Knopf gedrückt (dann ggf. Anmeldeseite zeigen)
 async function odSync(manual) {
   if (!OD_OK || !S.link || odSyncing) return;
-  odSyncing = true; renderSync();
+  odSyncing = true; if (manual) syncShow = true; renderSync();
   try {
     let at = await odToken();
     if (!at) {
@@ -1286,28 +1286,28 @@ async function odSync(manual) {
     }
     let r = await fetch('https://graph.microsoft.com/v1.0/shares/' + shareId(S.link) + '/driveItem', { headers: { Authorization: 'Bearer ' + at, Prefer: 'redeemSharingLinkIfNecessary' } });
     if (r.status === 401) { lsSet('hh-od-tok', { ...(lsGet('hh-od-tok', {}) || {}), at: null, exp: 0 }); odSyncing = false; return odSync(manual); }
-    if (r.status === 404 || r.status === 403) { if (manual) toast('Die Datei der Lehrkraft ist nicht (mehr) erreichbar. Bitte den Verbindungs-Code neu scannen.'); S.linkErr = 'nicht erreichbar'; save(); return; }
+    if (r.status === 404 || r.status === 403) { if (manual) toast('Die Datei der Lehrkraft ist nicht (mehr) erreichbar. Bitte den Verbindungs-Code neu scannen.'); S.linkErr = 'nicht erreichbar'; saveRaw(); return; }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const it = await r.json();
-    if (!manual && it.eTag && it.eTag === S.linkTag) { S.linkSync = Date.now(); S.linkErr = ''; save(); return; }
+    if (!manual && it.eTag && it.eTag === S.linkTag) { S.linkSync = Date.now(); S.linkErr = ''; saveRaw(); return; }
     const c = await fetch(it['@microsoft.graph.downloadUrl'], { cache: 'no-store' });
     if (!c.ok) throw new Error('Download ' + c.status);
     const P = JSON.parse(await c.text());
     if (!P || P.app !== 'jpw') throw new Error('unbekannte Datei');
-    S.linkTag = it.eTag; S.linkSync = Date.now(); S.linkErr = ''; save();
+    S.linkTag = it.eTag; S.linkSync = Date.now(); S.linkErr = ''; saveRaw();
     P.dups = findDups(P);
     if (P.dups.length) showImport(P); else { applyImport(P, true); if (manual) toast('Aktualisiert – Stand ' + fmtD(P.d)); }
   } catch (e) {
-    S.linkErr = e.message; save();
+    S.linkErr = e.message; saveRaw();
     if (manual) toast(navigator.onLine === false ? 'Keine Internetverbindung.' : 'Aktualisieren hat nicht geklappt: ' + e.message);
-  } finally { odSyncing = false; renderSync(); }
+  } finally { odSyncing = false; if (!ghSyncing) syncShow = false; renderSync(); }
 }
 function renderSync() {
   const b = $('syncBtn'); if (!b) return;
   b.hidden = !(OD_OK && S.link) && !S.gh;
   if ($('cloudSt')) $('cloudSt').hidden = !bkOn();
   renderBk();
-  b.textContent = odSyncing || ghSyncing ? '⏳' : odNeedLogin && !S.gh ? '🔄 Anmelden' : '🔄';
+  b.textContent = (odSyncing || ghSyncing) && syncShow ? '⏳' : odNeedLogin && !S.gh ? '🔄 Anmelden' : '🔄';
   b.title = odNeedLogin ? 'Mit dem Schulkonto anmelden und aktualisieren' : 'Neuesten Stand der Lehrkraft holen';
   const box = $('linkBox'); if (!box) return;
   box.hidden = !(OD_OK && S.link) && !S.gh;
@@ -1358,26 +1358,27 @@ setInterval(() => { if (document.visibilityState === 'visible' && odDue() && (ls
    z. B. als Jamf-Webclip. So ist die Klasse auch dann sofort wieder da, wenn das iPad seinen Speicher geleert hat. */
 const ghValid = k => /^[\w.-]+\/[\w.-]+\/[\w.\/-]+\/[a-z0-9]{8,40}$/i.test(String(k || ''));
 const ghRaw = k => { const a = k.split('/'), key = a.pop(), own = a.shift(), rep = a.shift(); return `https://raw.githubusercontent.com/${own}/${rep}/${a.join('/')}/klassen/${key}.json`; };
-var ghSyncing = false;   // var: renderSync() läuft schon vorher
+var ghSyncing = false, syncShow = false;   // syncShow: ⏳ nur beim Antippen von 🔄, nicht beim stillen Nachsehen
+   // var: renderSync() läuft schon vorher
 async function ghSync(manual) {
   if (!S.gh || ghSyncing) return;
-  ghSyncing = true; renderSync();
+  ghSyncing = true; if (manual) syncShow = true; renderSync();
   try {
     const r = await fetch(ghRaw(S.gh) + '?t=' + Math.floor(Date.now() / 30000), { cache: 'no-store' });
-    if (r.status === 404) { S.ghErr = 'Klassendatei nicht gefunden'; save(); if (manual) toast('Die Klassendatei der Lehrkraft gibt es nicht (mehr). Bitte bei der Lehrkraft nachfragen.'); return; }
+    if (r.status === 404) { S.ghErr = 'Klassendatei nicht gefunden'; saveRaw(); if (manual) toast('Die Klassendatei der Lehrkraft gibt es nicht (mehr). Bitte bei der Lehrkraft nachfragen.'); return; }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const txt = await r.text(), tag = strHash(txt);
     S.ghSync = Date.now(); S.ghErr = '';
-    if (!manual && tag === S.ghTag) { save(); return; }
+    if (!manual && tag === S.ghTag) { saveRaw(); return; }
     const P = JSON.parse(txt);
     if (!P || P.app !== 'jpw') throw new Error('unbekannte Datei');
     S.ghTag = tag; if (P.cls) S.cls = P.cls; save();
     P.dups = findDups(P);
     if (P.dups.length) showImport(P); else { applyImport(P, true); if (manual) toast('Aktualisiert – Stand ' + fmtD(P.d)); }
   } catch (e) {
-    S.ghErr = e.message; save();
+    S.ghErr = e.message; saveRaw();
     if (manual) toast(navigator.onLine === false ? 'Keine Internetverbindung.' : 'Aktualisieren hat nicht geklappt: ' + e.message);
-  } finally { ghSyncing = false; renderSync(); }
+  } finally { ghSyncing = false; if (!odSyncing) syncShow = false; renderSync(); }
 }
 (function ghStart() {
   const k = new URLSearchParams(location.search).get('k');
@@ -1439,7 +1440,9 @@ async function cloudSync(manual) {
   if (!bkOn()) return;
   if (csBusy) { csAgain = true; return; }
   if (navigator.onLine === false) { setCs('off'); return; }
-  csBusy = true; csLast = Date.now(); setCs('busy');
+  csBusy = true; csLast = Date.now();
+  const quiet = !manual && csState === 'ok' && strHash(JSON.stringify(bkData())) === S.bkHash;   // nur nachsehen, ob ein anderes Gerät etwas geändert hat
+  if (!quiet) setCs('busy');
   try {
     if (!(await odToken())) { setCs('login'); if (manual) odLogin(false); return; }
     for (let attempt = 0; attempt < 4; attempt++) {
