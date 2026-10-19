@@ -161,3 +161,10 @@ NEU in Version 2026-11-13: 🗳 In der Abstimmung bleiben
 NEU in Version 2026-11-14
 - Kopfzeile neu geordnet: 🗳 Abstimmen steht jetzt links, abgesetzt durch einen Trennstrich von den
   Knöpfen fürs Speichern/Abgleichen (☁️, 🔄) und „📷 Empfangen“.
+
+NEU in Version 2026-11-15
+- 🗓 Änderungen für einzelne Tage: Fällt eine Stunde aus, gibt es Vertretung, einen anderen Raum oder einen
+  Hinweis, steht das jetzt direkt im Stundenplan (nach dem nächsten Empfangen).
+- 🎯 Klassenziel: Wenn deine Lehrkraft ein Klassenziel freigibt, siehst du rechts neben dem Stundenplan,
+  wie weit eure Klasse schon ist – und wenn es geschafft ist, gibt es Konfetti. Gibt es kein Ziel,
+  erscheint auch nichts.
