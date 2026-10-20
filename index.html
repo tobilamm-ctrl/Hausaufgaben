@@ -418,7 +418,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-11-17</p>
+    <p class="hint">Version 2026-11-18</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>
@@ -516,7 +516,7 @@ const KEY = 'schulplaner-v1';
 let S = { tt: null, grp: {}, hw: [], ex: [], cls: '', seq: 0, extra: [], msg: [], mat: {}, packed: {}, badge: false, remind: '15:00' };
 try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
 /* Änderungen mit Zeitstempel versehen (für den Abgleich zwischen mehreren Symbolen/Geräten über das eigene OneDrive) */
-const SYNC_ARR = ['hw', 'ex'], SYNC_FLD = ['tt', 'ch', 'goal', 'msg', 'cls', 'link', 'grp', 'mat', 'packed', 'extra', 'badge', 'remind'], SYNC_OWN = ['grp', 'mat', 'packed', 'extra', 'badge', 'remind'];
+const SYNC_ARR = ['hw', 'ex'], SYNC_FLD = ['tt', 'ttl', 'ttCur', 'tts', 'ch', 'goal', 'msg', 'cls', 'link', 'grp', 'mat', 'packed', 'extra', 'badge', 'remind'], SYNC_OWN = ['grp', 'mat', 'packed', 'extra', 'badge', 'remind'];
 const itemJson = it => { const { m, ...r } = it; return JSON.stringify(r); };
 let syncBase = null;
 function snapBase() {
@@ -545,10 +545,10 @@ let ui = { tab: 'tt', week: 0 };
 try { ui.tab = sessionStorage.getItem('sp-tab') || 'tt'; } catch (e) {}
 
 const cellArr = v => (Array.isArray(v) ? v : v ? [v] : []).filter(Boolean);
-const subjByName = name => S.tt && name ? S.tt.subjects.find(s => s.name.toLowerCase() === name.toLowerCase()) : null;
+const subjByName = name => S.tt && name ? allSubjects().find(s => s.name.toLowerCase() === name.toLowerCase()) : null;
 const subjColor = name => { const s = subjByName(name); if (s) return s.color; if (!name) return 'var(--grey)'; let h = 0; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; };
 function subjectList() {
-  const set = new Set(S.tt ? S.tt.subjects.map(s => s.name) : []);
+  const set = new Set(S.tt ? allSubjects().map(s => s.name) : []);
   (S.extra || []).forEach(n => set.add(n));
   S.hw.forEach(h => h.subject && set.add(h.subject)); S.ex.forEach(x => x.subject && set.add(x.subject));
   return [...set].sort((a, b) => a.localeCompare(b, 'de'));
@@ -599,18 +599,31 @@ function abParity(refMonday, monday, wd) {   // Ferien und Feiertage zählen bei
   return n % 2;
 }
 const mondayOf = ds => addDays(ds, -weekdayIdx(new Date(ds + 'T00:00')));
-const isAB = key => !!(S.tt && S.tt.ab && S.tt.ab[key]) && cellArr(S.tt.cells[key]).length > 1;
-function mineFor(key, monday) {
-  const ids = cellArr(S.tt.cells[key]), g = S.grp[key]; if (ids.length < 2 || !g) return null;
-  if (isAB(key)) { if (typeof g !== 'object' || !ids.includes(g.id)) return null; return abParity(g.wk, monday, +key.split('|')[0]) ? ids.find(x => x !== g.id) : g.id; }
+/* ---------- Stundenpläne mit „gültig ab“ (von der Lehrkraft) ----------
+   S.ttl = [[id, ab-Montag]] Zeitleiste ('' = von Anfang an), S.ttCur = id des aktuellen Plans (= S.tt),
+   S.tts = { id: Plan } alle anderen Pläne, die dieses Gerät je bekommen hat. */
+function ttIdAt(ds) { if (!S.ttl || !S.ttl.length || !ds) return null; const m = mondayOf(ds); let id = null; S.ttl.forEach(([pid, f]) => { if (!f || f <= m) id = pid; }); return id; }
+function ttAt(ds) {
+  const id = ttIdAt(ds); if (!id || id === S.ttCur) return S.tt;
+  const p = (S.tts || {})[id]; if (p) return p;
+  for (const [pid] of S.ttl) { if (pid === S.ttCur) return S.tt; if ((S.tts || {})[pid]) return S.tts[pid]; }   // ältester bekannter Plan
+  return S.tt;
+}
+const ttMissing = ds => { const id = ttIdAt(ds); return !!id && id !== S.ttCur && !(S.tts || {})[id]; };
+const allSubjects = () => { const out = [], seen = new Set(); [S.tt, ...Object.values(S.tts || {})].forEach(t => (t && t.subjects || []).forEach(x => { if (!seen.has(x.id)) { seen.add(x.id); out.push(x); } })); return out; };
+const isAB = (key, tt = S.tt) => !!(tt && tt.ab && tt.ab[key]) && cellArr(tt.cells[key]).length > 1;
+function mineFor(key, monday, tt = ttAt(monday)) {
+  const ids = cellArr(tt.cells[key]), g = S.grp[key]; if (ids.length < 2 || !g) return null;
+  if (isAB(key, tt)) { if (typeof g !== 'object' || !ids.includes(g.id)) return null; return abParity(g.wk, monday, +key.split('|')[0]) ? ids.find(x => x !== g.id) : g.id; }
   return typeof g === 'string' && ids.includes(g) ? g : null;
 }
 function nextLesson(name) {
   const s = subjByName(name); if (!s) return '';
   for (let n = 1; n <= 60; n++) {
     const ds = addDays(todayStr(), n), wd = weekdayIdx(new Date(ds + 'T00:00'));
-    if (wd > (S.tt.sat ? 5 : 4) || freeDay(ds)) continue;
-    if (S.tt.slots.some((sl, i) => { if (sl.pause) return false; const k = wd + '|' + i, m = mineFor(k, mondayOf(ds)); return (m ? [m] : cellArr(S.tt.cells[k])).includes(s.id); })) return ds;
+    const T = ttAt(ds);
+    if (wd > (T.sat ? 5 : 4) || freeDay(ds)) continue;
+    if (T.slots.some((sl, i) => { if (sl.pause) return false; const k = wd + '|' + i, m = mineFor(k, mondayOf(ds), T); return (m ? [m] : cellArr(T.cells[k])).includes(s.id); })) return ds;
   }
   return '';
 }
@@ -638,7 +651,7 @@ function render() {
 }
 
 function renderTT() {
-  const tt = S.tt;
+  const tt = S.tt ? ttAt(addDays(todayStr(), -weekdayIdx(new Date()) + 7 * ui.week)) : null;
   if (!tt) { $('ttCard').innerHTML = '<div class="empty"><b>Noch kein Stundenplan</b>Tippe oben auf „📷 Empfangen“ und scanne den QR-Code deiner Lehrerin oder deines Lehrers.</div>'; return; }
   const days = tt.sat ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4], now = new Date(), today = weekdayIdx(now), thisWeek = !ui.week;
   const hm = pad(now.getHours()) + ':' + pad(now.getMinutes());
@@ -664,8 +677,8 @@ function renderTT() {
       }
       const off = false;
       const key = d + '|' + i, ids = cellArr(tt.cells[key]), ss = ids.map(id => tt.subjects.find(s => s.id === id)).filter(Boolean), td = thisWeek && d === today;
-      const ab = ss.length > 1 && isAB(key); if (ab) abSeen = true; else if (ss.length > 1) split = true;
-      const mine = mineFor(key, monday);
+      const ab = ss.length > 1 && isAB(key, tt); if (ab) abSeen = true; else if (ss.length > 1) split = true;
+      const mine = mineFor(key, monday, tt);
       const parts = ss.map(s => `<div class="part${ss.length > 1 && mine ? (mine === s.id ? ' mine' : ' dim') : ''}" style="--sc:${s.color}" title="${esc(s.name)}"><span>${esc(s.name)}</span></div>`).join('');
       const chg = chgFor(addDays(monday, d), i);
       return `<td class="c${ss.length ? ' full' : ''}${ab ? ' ab' : ''}${off ? ' off' : ''}${td ? ' today' : ''}${td && cur && !off ? ' now' : ''}${chg ? ' chg-' + chg[2] : ''}" data-key="${key}">${ss.length ? `<div class="parts${ss.length > 1 ? ' two' : ''}">${parts}</div>` : ''}${ab ? '<span class="abm">⇄</span>' : ''}${chg ? chgHtml(chg) : ''}</td>`;
@@ -673,6 +686,7 @@ function renderTT() {
   }).join('');
   $('ttCard').innerHTML = `<div class="weeknav"><button id="wkPrev">◀</button><button id="wkLbl" class="${thisWeek ? '' : 'off'}">KW ${kw} · ${fmtD(monday)}–${fmtD(addDays(monday, days[days.length - 1]))}</button><button id="wkNext">▶</button><button class="primary hwplus" id="wkHw" title="Neue Hausaufgabe eintragen">＋ Hausaufgabe</button></div>
     <div class="ttscroll"><table class="tt">${head}${body}</table></div>
+    ${ttMissing(monday) ? '<p class="hint">ℹ️ Für diese Woche hat deine Lehrkraft einen älteren Stundenplan, der auf diesem Gerät nicht gespeichert ist – angezeigt wird der älteste bekannte.</p>' : ''}
     ${split ? '<p class="hint">Geteilte Stunde: Tippe darauf, um deine Gruppe zu wählen.</p>' : ''}
     ${abSeen ? '<p class="hint"><b>⇄ = 14-täglicher Wechsel:</b> Tippe auf die Stunde und wähle, welches Fach du in <b>dieser</b> Woche hast. Ab dann wechselt es automatisch – Ferien und Feiertage zählen dabei nicht mit.</p>' : ''}`;
 }
@@ -683,13 +697,14 @@ $('ttCard').addEventListener('click', e => {
   if (e.target.closest('#wkHw')) { setTab('hw'); window.scrollTo(0, 0); setTimeout(() => { try { $('hwText').focus(); } catch (er) {} }, 50); return; }
   if (e.target.closest('[data-pack]')) { renderPack(); $('packDlg').hidden = false; return; }
   const td = e.target.closest('td.c'); if (!td) return;
-  const ids = cellArr(S.tt.cells[td.dataset.key]); if (ids.length < 2) return;
-  const key = td.dataset.key, monday = addDays(todayStr(), -weekdayIdx(new Date()) + 7 * ui.week);
-  const i = ids.indexOf(mineFor(key, monday)), next = i === ids.length - 1 ? null : ids[i + 1];   // keine → 1. Fach → 2. Fach → keine
+  const monday = addDays(todayStr(), -weekdayIdx(new Date()) + 7 * ui.week), T = ttAt(monday);
+  const ids = cellArr(T.cells[td.dataset.key]); if (ids.length < 2) return;
+  const key = td.dataset.key;
+  const i = ids.indexOf(mineFor(key, monday, T)), next = i === ids.length - 1 ? null : ids[i + 1];   // keine → 1. Fach → 2. Fach → keine
   if (!next) delete S.grp[key];
-  else if (isAB(key)) {
+  else if (isAB(key, T)) {
     S.grp[key] = { id: next, wk: monday };
-    const nm = id => { const s = S.tt.subjects.find(x => x.id === id); return s ? s.name : ''; };
+    const nm = id => { const s = allSubjects().find(x => x.id === id); return s ? s.name : ''; };
     toast(`Diese Woche ${nm(next)}, nächste Woche ${nm(ids.find(x => x !== next))}`);
   } else S.grp[key] = next;
   save(); renderTT();
@@ -990,13 +1005,23 @@ $('impOk').addEventListener('click', () => { const P = pending; if (!P) return; 
 function applyImport(P, quiet) {
   if (P.cls) S.cls = P.cls;
   if (P.tt) {
-    const old = S.tt, tt = { sat: !!P.tt.sat, slots: P.tt.sl.map(([label, start, end, pz]) => ({ label, start, end, pause: !!pz })), subjects: P.tt.su.map(([id, name, color, mat]) => ({ id, name, color, mat: mat || '' })), cells: P.tt.c || {} };
-    tt.ab = P.tt.ab || {};
-    Object.keys(S.grp).forEach(k => {   // Wahl behalten, wenn die Stunde gleich bleibt
-      const g = S.grp[k], ids = cellArr(tt.cells[k]), ab = !!tt.ab[k] && ids.length > 1;
-      if (ab ? !(g && typeof g === 'object' && ids.includes(g.id)) : !(typeof g === 'string' && ids.includes(g))) delete S.grp[k];
-    });   // Gruppenwahl behalten, wenn die Stunde gleich bleibt
-    S.tt = tt; void old;
+    const su = P.tt.su.map(([id, name, color, mat]) => ({ id, name, color, mat: mat || '' }));
+    const mk = pt => ({ sat: !!pt.sat, slots: pt.sl.map(([label, start, end, pz]) => ({ label, start, end, pause: !!pz })), subjects: su, cells: pt.c || {}, ab: pt.ab || {} });
+    const tt = mk(P.tt);
+    if (P.tv && Array.isArray(P.tv.tl)) {   // mehrere Pläne: Zeitleiste übernehmen, Archiv ergänzen, gelöschte Pläne entfernen
+      const ids = new Set(P.tv.tl.map(x => x[0])), arch = {};
+      Object.entries(S.tts || {}).forEach(([id, p]) => { if (ids.has(id)) arch[id] = p; });
+      if (S.tt && S.ttCur && S.ttCur !== P.tv.cur && ids.has(S.ttCur)) arch[S.ttCur] = S.tt;   // bisher aktuellen Plan aufheben
+      Object.entries(P.tv.pl || {}).forEach(([id, pt]) => { if (ids.has(id) && pt && pt.sl) arch[id] = mk(pt); });
+      delete arch[P.tv.cur];
+      S.ttl = P.tv.tl; S.ttCur = P.tv.cur; S.tts = arch;
+    } else { delete S.ttl; delete S.ttCur; delete S.tts; }
+    const plans = [tt, ...Object.values(S.tts || {})];
+    Object.keys(S.grp).forEach(k => {   // Gruppenwahl behalten, wenn die Stunde in einem der Pläne gleich bleibt
+      const g = S.grp[k], ok = plans.some(p => { const ids = cellArr(p.cells[k]), ab = !!(p.ab || {})[k] && ids.length > 1; return ab ? (g && typeof g === 'object' && ids.includes(g.id)) : (typeof g === 'string' && ids.includes(g)); });
+      if (!ok) delete S.grp[k];
+    });
+    S.tt = tt;
   }
   let nHw = 0, nEx = 0;
   (P.hw || []).forEach(([id, subject, title, given, due, tnote]) => {
@@ -1093,13 +1118,13 @@ $('msgs').addEventListener('click', e => { const b = e.target.closest('[data-rea
 function packDay() {
   if (!S.tt) return null;
   let d = new Date().getHours() < 12 ? todayStr() : addDays(todayStr(), 1);
-  for (let n = 0; n < 40; n++, d = addDays(d, 1)) { const wd = weekdayIdx(new Date(d + 'T00:00')); if (wd <= (S.tt.sat ? 5 : 4) && !freeDay(d)) return d; }
+  for (let n = 0; n < 40; n++, d = addDays(d, 1)) { const wd = weekdayIdx(new Date(d + 'T00:00')); if (wd <= (ttAt(d).sat ? 5 : 4) && !freeDay(d)) return d; }
   return null;
 }
 function subjectsOn(d) {
-  const wd = weekdayIdx(new Date(d + 'T00:00')), mon = mondayOf(d), out = [];
-  S.tt.slots.forEach((sl, i) => { if (sl.pause) return; const k = wd + '|' + i, m = mineFor(k, mon);
-    (m ? [m] : cellArr(S.tt.cells[k])).forEach(id => { const su = S.tt.subjects.find(x => x.id === id); if (su && !out.some(o => o.id === su.id)) out.push(su); }); });
+  const wd = weekdayIdx(new Date(d + 'T00:00')), mon = mondayOf(d), out = [], T = ttAt(d);
+  T.slots.forEach((sl, i) => { if (sl.pause) return; const k = wd + '|' + i, m = mineFor(k, mon, T);
+    (m ? [m] : cellArr(T.cells[k])).forEach(id => { const su = (T.subjects || []).find(x => x.id === id) || allSubjects().find(x => x.id === id); if (su && !out.some(o => o.id === su.id)) out.push(su); }); });
   return out;
 }
 const teacherMat = name => { const su = subjByName(name); return su && su.mat || ''; };
@@ -1419,6 +1444,12 @@ function mergeData(L, R, first) {
     const lt = (L.fm || {})[k] || 0, rt = (R.fm || {})[k] || 0, rE = isEmptyV(R[k]);
     if (rt > lt || (rt === lt && !rE) || (first && SYNC_OWN.includes(k) && !rE)) { out[k] = R[k]; fm[k] = Math.max(lt, rt); }
   });
+  if (L.tts || R.tts || L.ttl || R.ttl) {   // Plan-Archiv vereinigen: kein Plan geht beim Abgleich verloren
+    const ids = new Set((out.ttl || []).map(x => x[0])), u = {}, put = (id, p) => { if (p && ids.has(id) && id !== out.ttCur) u[id] = p; };
+    [L, R].forEach(X => { Object.entries(X.tts || {}).forEach(([id, p]) => put(id, p)); if (X.ttCur) put(X.ttCur, X.tt); });
+    Object.entries(out.tts || {}).forEach(([id, p]) => put(id, p));
+    out.tts = u;
+  }
   out.fm = fm; out.del = del; out.seq = Math.max(L.seq || 0, R.seq || 0);
   return out;
 }

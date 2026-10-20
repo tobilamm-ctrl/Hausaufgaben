@@ -177,3 +177,8 @@ NEU in Version 2026-11-16
 NEU in Version 2026-11-17
 - Die Wochenauswahl springt beim Durchblättern nicht mehr: Der zusätzliche 🎒-Packlisten-Knopf neben
   „＋ Hausaufgabe“ ist entfernt. Die Packliste steht weiterhin oben über dem passenden Tag.
+
+NEU in Version 2026-11-18: 📅 Stundenplan wechselt automatisch
+- Legt die Lehrkraft einen neuen Stundenplan „ab“ einem Datum an, zeigt das Heft ab dieser Woche
+  automatisch den neuen Plan – frühere Wochen behalten den alten. Alle Pläne, die das Heft einmal
+  bekommen hat, bleiben gespeichert (auch in der OneDrive-Sicherung).
