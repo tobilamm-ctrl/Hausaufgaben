@@ -186,3 +186,5 @@ NEU in Version 2026-11-18: 📅 Stundenplan wechselt automatisch
 NEU in Version 2026-11-19
 - 🎯 Klassenziel: Auch die neuen Darstellungen der Lehrkraft (Baum, Burg, Bergsteiger, Ballons, Aquarium,
   Sternbild, Lichterkette) werden als Fortschrittsbalken mit passendem Symbol angezeigt.
+
+2026-12-19: Ein älterer Stand der Lehrkraft (z. B. aus einer alten Kopie der Klassendatei) wird ignoriert – Hausaufgaben verschwinden dadurch nicht mehr.

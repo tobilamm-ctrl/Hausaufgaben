@@ -418,7 +418,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-11-19</p>
+    <p class="hint">Version 2026-12-19</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>
@@ -1002,7 +1002,10 @@ function showImport(P) {
 $('impCancel').addEventListener('click', () => { $('impDlg').hidden = true; pending = null; });
 $('impInfo').addEventListener('change', e => { const r = e.target.closest('[data-dup]'); if (r && pending && pending.dups) pending.dups[+r.dataset.dup].merge = r.value === '1'; });
 $('impOk').addEventListener('click', () => { const P = pending; if (!P) return; applyImport(P); $('impDlg').hidden = true; pending = null; });
+// Stand-Stempel der Lehrkraft: ein älterer Stand (fehlt der Stempel, stammt er von einer alten App-Version) wird ignoriert
+const tpmOld = P => !!(S.tpm && P && P.pub && (!P.pm || P.pm < S.tpm));
 function applyImport(P, quiet) {
+  if (P.pm) S.tpm = Math.max(S.tpm || 0, P.pm);
   if (P.cls) S.cls = P.cls;
   if (P.tt) {
     const su = P.tt.su.map(([id, name, color, mat]) => ({ id, name, color, mat: mat || '' }));
@@ -1321,6 +1324,7 @@ async function odSync(manual) {
     const P = JSON.parse(await c.text());
     if (!P || P.app !== 'jpw') throw new Error('unbekannte Datei');
     S.linkTag = it.eTag; S.linkSync = Date.now(); S.linkErr = ''; saveRaw();
+    if (tpmOld(P)) return;   // älterer Stand als schon übernommen: nicht übernehmen
     P.dups = findDups(P);
     if (P.dups.length) showImport(P); else { applyImport(P, true); if (manual) toast('Aktualisiert – Stand ' + fmtD(P.d)); }
   } catch (e) {
@@ -1398,7 +1402,9 @@ async function ghSync(manual) {
     if (!manual && tag === S.ghTag) { saveRaw(); return; }
     const P = JSON.parse(txt);
     if (!P || P.app !== 'jpw') throw new Error('unbekannte Datei');
-    S.ghTag = tag; if (P.cls) S.cls = P.cls; save();
+    S.ghTag = tag;
+    if (tpmOld(P)) { saveRaw(); return; }   // älterer Stand (z. B. von einer alten Kopie der Lehrkraft): nicht übernehmen
+    if (P.cls) S.cls = P.cls; save();
     P.dups = findDups(P);
     if (P.dups.length) showImport(P); else { applyImport(P, true); if (manual) toast('Aktualisiert – Stand ' + fmtD(P.d)); }
   } catch (e) {
@@ -1421,7 +1427,7 @@ setInterval(() => { if (document.visibilityState === 'visible' && ghDue()) ghSyn
    Jedes Symbol (z. B. Schul- und Privatmodus) holt beim Öffnen den Stand aus dieser Datei, führt ihn mit dem
    iPad zusammen (neuere Änderung gewinnt, Löschungen werden mitgenommen) und speichert ihn wieder dorthin. */
 const BK_PATH = '/me/drive/root:/Hausaufgabenheft/Sicherung Hausaufgabenheft.json';
-const LOCAL_ONLY = ['linkSync', 'linkTag', 'linkErr', 'bkTime', 'bkTag', 'bkHash', 'ghSync', 'ghTag', 'ghErr'];
+const LOCAL_ONLY = ['linkSync', 'linkTag', 'linkErr', 'bkTime', 'bkTag', 'bkHash', 'ghSync', 'ghTag', 'ghErr', 'tpm'];
 const bkData = () => { const d = JSON.parse(JSON.stringify(S)); LOCAL_ONLY.forEach(k => delete d[k]); return d; };
 const hasOwnData = () => (S.hw || []).some(h => h.src !== 't' || h.done || h.note) || (S.ex || []).some(x => x.src !== 't' || x.note) || Object.keys(S.grp || {}).length > 0 || (S.extra || []).length > 0 || Object.keys(S.mat || {}).length > 0;
 const strHash = str => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36); };
