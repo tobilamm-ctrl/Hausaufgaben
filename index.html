@@ -63,6 +63,29 @@
   .empty { text-align: center; padding: 30px 10px; color: var(--muted); }
   .empty b { display: block; font-size: 1.15rem; color: var(--ink); margin-bottom: 6px; }
   [hidden] { display: none !important; }
+  /* 🎄 Adventskalender (von der Lehrkraft) */
+  .advlay:not([hidden]) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 14px; align-items: start; }
+  @media (max-width: 820px) { .advlay:not([hidden]) { grid-template-columns: minmax(0, 1fr); } .advg { grid-template-columns: repeat(8, 1fr); } }
+  .advg { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .advd { aspect-ratio: 1; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 1.3rem; padding: 0; min-height: 0; border: none; }
+  .advd small { font-size: .9rem; margin-top: 2px; }
+  .advd.o { background: var(--accent); color: #fff; } .advd.t { background: var(--sun); color: #7a5b00; box-shadow: 0 0 0 3px #e0b93a; }
+  .advd.sel { outline: 3px solid var(--red); outline-offset: 2px; }
+  .advd.z { background: #f1f2ef; color: #b7bab6; border: 2px dashed #d9dcd7; cursor: default; }
+  .advleg { margin: 10px 0 0; color: var(--muted); font-size: .85rem; }
+  .advword { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; } .advword span { width: 26px; height: 32px; border-radius: 7px; background: #f1f2ef; display: grid; place-items: center; font-weight: 800; color: var(--accent); } .advword span.f { background: var(--accent-soft); }
+  .advk { color: var(--red); font-weight: 800; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; }
+  .advtx { font-size: 1.02rem; line-height: 1.6; } .advtx p { margin: 0 0 10px; } .advtx .ai { font-style: italic; color: var(--muted); }
+  .advtx blockquote { margin: 0 0 10px; padding: 8px 12px; background: var(--sun-soft); border-left: 4px solid var(--sun); border-radius: 6px; font-style: italic; }
+  .advtx b.l { background: var(--sun-soft); border: 1.5px solid var(--sun); border-radius: 6px; padding: 0 6px; color: #7a5b00; }
+  .advopt { border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-top: 8px; background: #fafbf9; } .advopt.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  .advsol { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); }
+  #advBan .dlg { padding: 0; overflow: hidden; width: 440px; }
+  #advBan .top { background: linear-gradient(135deg, #7f1d1d, #b4585e); color: #fff; padding: 22px 90px 18px 22px; position: relative; }
+  #advBan .top b { display: block; font-size: 1.5rem; } #advBan .top i { position: absolute; right: 18px; top: 10px; font-size: 3.2rem; font-style: normal; }
+  #advBan .btns { padding: 16px 22px; }
+  #advAll .dlg { width: 720px; }
+
 
   /* Stundenplan */
   .weeknav { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
@@ -356,6 +379,13 @@
     <div id="exList"></div>
   </section>
 
+  <section id="pADV" class="advlay" hidden>
+    <div><div class="card"><h2>🎄 <span id="advTitle">Adventskalender</span></h2><div class="advg" id="advGrid"></div><p class="advleg" id="advLeg"></p></div>
+      <div class="card" id="advWordCard"><h2>Lösungswort</h2><div class="advword" id="advWord"></div><p class="advleg" id="advWordInfo"></p></div>
+      <div class="card"><button id="advAllBtn" style="width:100%">📖 Die Geschichte bisher am Stück lesen</button></div></div>
+    <div class="card" id="advDoor"></div>
+  </section>
+
   <section id="pCAL" hidden>
     <div class="card">
       <div class="calhd"><button id="calPrev" aria-label="Voriger Monat">◀</button><h2 id="calTitle"></h2><button id="calNext" aria-label="Nächster Monat">▶</button><button id="calToday">Heute</button></div>
@@ -364,6 +394,10 @@
     <div class="card calday" id="calDay"></div>
   </section>
 </div>
+
+<!-- 🎄 Adventskalender -->
+<div class="back" id="advBan" hidden><div class="dlg"><div class="top"><i>🎄</i><b id="advBanT">Türchen ist offen!</b><span id="advBanS"></span></div><div class="btns"><button id="advLater">Später</button><button class="primary" id="advRead">Jetzt lesen</button></div></div></div>
+<div class="back" id="advAll" hidden><div class="dlg"><h2>📖 Die Geschichte bisher</h2><div class="advtx" id="advAllBody"></div><div class="btns"><button class="primary" id="advAllClose">Schließen</button></div></div></div>
 
 <!-- Eintrag bearbeiten -->
 <div class="back" id="edDlg" hidden>
@@ -418,7 +452,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-12-19</p>
+    <p class="hint">Version 2026-12-24</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>
@@ -632,7 +666,7 @@ function nextLesson(name) {
 function setTab(t) {
   ui.tab = t; try { sessionStorage.setItem('sp-tab', t); } catch (e) {}
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-  $('pTT').hidden = t !== 'tt'; $('pHW').hidden = t !== 'hw'; $('pEX').hidden = t !== 'ex'; $('pCAL').hidden = t !== 'cal';
+  $('pTT').hidden = t !== 'tt'; $('pHW').hidden = t !== 'hw'; $('pEX').hidden = t !== 'ex'; $('pCAL').hidden = t !== 'cal'; $('pADV').hidden = t !== 'adv';
   render();
 }
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); });
@@ -648,6 +682,7 @@ function render() {
   if (ui.tab === 'hw') renderHW();
   if (ui.tab === 'ex') renderEX();
   if (ui.tab === 'cal') renderCal();
+  advSync();
 }
 
 function renderTT() {
@@ -1006,6 +1041,7 @@ $('impOk').addEventListener('click', () => { const P = pending; if (!P) return; 
 const tpmOld = P => !!(S.tpm && P && P.pub && (!P.pm || P.pm < S.tpm));
 function applyImport(P, quiet) {
   if (P.pm) S.tpm = Math.max(S.tpm || 0, P.pm);
+  if (P.adv) S.adv = P.adv; else if (P.pub || P.tt) delete S.adv;   // 🎄 Adventskalender der Lehrkraft
   if (P.cls) S.cls = P.cls;
   if (P.tt) {
     const su = P.tt.su.map(([id, name, color, mat]) => ({ id, name, color, mat: mat || '' }));
@@ -1593,6 +1629,60 @@ if (csCan() && !new URLSearchParams(location.search).get('code')) setTimeout(() 
 if (OD_OK && S.bk && !S.link && !csCan() && lsGet('hh-od-user', null) && !noSilent() && navigator.onLine !== false && !new URLSearchParams(location.search).get('code') && !new URLSearchParams(location.search).get('error')) setTimeout(() => odLogin(true), 1200);
 
 $('hwDue').value = '';
+
+/* ---------- 🎄 Adventskalender (kommt von der Lehrkraft; nur geöffnete Türchen) ----------
+   S.adv = { t, w, to, ds: [[n, art, titel, intro, text, buchstabe, optionen|0, gewählt, frage, auflösung]] } */
+var ADV_I = { story: '📖', riddle: '🧩', quiz: '❓', info: '💡', move: '🤸', task: '🎁' };
+function advOn() { return !!(S.adv && S.adv.ds && S.adv.ds.length && todayStr() <= (S.adv.to || '9999')); }
+function advFmt(t) {
+  return String(t || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => {
+    const q = p.startsWith('>'), x = esc(q ? p.replace(/^>\s?/, '') : p).replace(/\*\*(.+?)\*\*/g, (m, y) => y.length <= 2 ? `<b class="l">${y}</b>` : `<b>${y}</b>`).replace(/\n/g, '<br>');
+    return q ? `<blockquote>${x}</blockquote>` : `<p>${x}</p>`;
+  }).join('');
+}
+function advSync() {
+  const on = advOn(), tabs = $('tabs'); let b = tabs.querySelector('[data-t="adv"]');
+  if (on && !b) { tabs.insertAdjacentHTML('beforeend', '<button data-t="adv">🎄 Advent</button>'); b = tabs.querySelector('[data-t="adv"]'); b.classList.toggle('on', ui.tab === 'adv'); }
+  if (!on && b) b.remove();
+  if (!on && ui.tab === 'adv') { setTab('tt'); return; }
+  if (on && ui.tab === 'adv') renderAdv();
+  if (on) advBanner();
+}
+function renderAdv() {
+  const a = S.adv, t = todayStr(), by = {}; a.ds.forEach(d => { by[d[0]] = d; });
+  const newest = Math.max(...a.ds.map(d => d[0])); if (!by[ui.advN]) ui.advN = newest;
+  $('advTitle').textContent = a.t || 'Adventskalender';
+  let g = '';
+  for (let n = 1; n <= 24; n++) { const d = by[n]; g += d ? `<button class="advd ${n === newest ? 't' : 'o'}${n === ui.advN ? ' sel' : ''}" data-an="${n}">${n}<small>${ADV_I[d[1]] || '📖'}</small></button>` : `<div class="advd z">${n}</div>`; }
+  $('advGrid').innerHTML = g;
+  $('advLeg').textContent = '📖 Geschichte · 🧩 Rätsel · ❓ Quiz · 💡 Wissen · 🤸 Bewegung · 🎁 Aufgabe – antippen zum Lesen. Neue Türchen öffnen sich Tag für Tag.';
+  const L = a.ds.map(d => d[5]).filter(Boolean);
+  $('advWordCard').hidden = !a.w;
+  $('advWord').innerHTML = Array.from({ length: a.w || 0 }, (_, i) => `<span${L[i] ? ' class="f"' : ''}>${esc(L[i] || '')}</span>`).join('');
+  $('advWordInfo').textContent = `${Math.min(L.length, a.w || 0)} von ${a.w || 0} Buchstaben gefunden`;
+  $('advAllBtn').parentNode.hidden = !a.ds.some(d => d[1] === 'story');
+  const d = by[ui.advN], [n, k, title, intro, text, , opts, chosen, q, sol] = d;
+  $('advDoor').innerHTML = `<div class="advk">Türchen ${n}</div><h2 style="margin:4px 0 10px">${esc(title)}</h2><div class="advtx">${intro ? `<p class="ai">${esc(intro)}</p>` : ''}${advFmt(text)}</div>
+    ${opts ? `<h2 style="margin:16px 0 4px;font-size:1rem">${esc(q || 'Wie soll es weitergehen?')}</h2>${opts.map((o, i) => `<div class="advopt${chosen === i ? ' on' : ''}">${i + 1} · ${esc(o)}${chosen === i ? ' ✓' : ''}</div>`).join('')}<p class="advleg">${chosen >= 0 ? '🗳 So hat die Klasse entschieden.' : '🗳 Abgestimmt wird in der Klasse.'}</p>` : ''}
+    ${sol ? `<div class="advsol"><b>💡 Auflösung</b><div class="advtx">${advFmt(sol)}</div></div>` : (k === 'riddle' || k === 'quiz') ? '<p class="advleg">💡 Die Auflösung gibt es morgen.</p>' : ''}`;
+}
+function advBanner() {
+  const a = S.adv, newest = Math.max(...a.ds.map(d => d[0]));
+  if (!$('advBan').hidden || newest <= (S.advSeen || 0) || !$('edDlg').hidden) return;
+  const d = a.ds.find(x => x[0] === newest);
+  $('advBanT').textContent = `Türchen ${newest} ist offen!`;
+  $('advBanS').textContent = d[1] === 'story' ? `Die Geschichte geht weiter: „${d[2]}“` : `Heute: ${d[2]}`;
+  $('advBan').hidden = false;
+}
+function advSeen() { const a = S.adv; if (a && a.ds.length) { S.advSeen = Math.max(...a.ds.map(d => d[0])); saveRaw(); } $('advBan').hidden = true; }
+$('advLater').addEventListener('click', advSeen);
+$('advRead').addEventListener('click', () => { advSeen(); ui.advN = S.advSeen; setTab('adv'); });
+$('advGrid').addEventListener('click', e => { const b = e.target.closest('[data-an]'); if (!b) return; ui.advN = +b.dataset.an; renderAdv(); if (innerWidth <= 820) $('advDoor').scrollIntoView({ behavior: 'smooth' }); });
+$('advAllBtn').addEventListener('click', () => {
+  $('advAllBody').innerHTML = S.adv.ds.filter(d => d[1] === 'story').map(d => `<h2 style="margin:18px 0 6px;color:var(--red)">${d[0]}. ${esc(d[2])}</h2>${d[3] ? `<p class="ai">${esc(d[3])}</p>` : ''}${advFmt(d[4])}`).join('');
+  $('advAll').hidden = false;
+});
+$('advAllClose').addEventListener('click', () => { $('advAll').hidden = true; });
 setTab(ui.tab);
 setInterval(() => { if (document.visibilityState === 'visible') render(); }, 60000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
