@@ -452,7 +452,7 @@
     <div class="remrow"><button id="remExams">📅 Proben &amp; Termine in den Kalender</button></div>
     <p class="hint" id="icsHelp" hidden style="background:#fef9c3;border-radius:8px;padding:6px 8px">📅 <b>So kommt es in den Kalender:</b> Im Teilen-Menü <b>„In Dateien sichern“</b> wählen. Dann die App <b>Dateien</b> öffnen, die Kalenderdatei antippen und <b>„Zum Kalender hinzufügen“</b> wählen. (Erscheint im Teilen-Menü direkt „Kalender“, geht es auch damit.)</p>
     <p class="hint">Der Kalender des iPads erinnert dann von selbst – auch wenn die App geschlossen ist. Bei Proben: zwei Tage und einen Tag vorher um 16 Uhr. Nach neuen Proben einfach nochmal tippen.</p>
-    <p class="hint">Version 2026-12-24</p>
+    <p class="hint">Version 2026-12-25</p>
     <div class="btns"><button class="primary" id="setClose">Fertig</button></div>
   </div>
 </div>
@@ -1633,7 +1633,7 @@ $('hwDue').value = '';
 /* ---------- 🎄 Adventskalender (kommt von der Lehrkraft; nur geöffnete Türchen) ----------
    S.adv = { t, w, to, ds: [[n, art, titel, intro, text, buchstabe, optionen|0, gewählt, frage, auflösung]] } */
 var ADV_I = { story: '📖', riddle: '🧩', quiz: '❓', info: '💡', move: '🤸', task: '🎁' };
-function advOn() { return !!(S.adv && S.adv.ds && S.adv.ds.length && todayStr() <= (S.adv.to || '9999')); }
+function advOn() { return !!(S.adv && S.adv.ds && todayStr() <= (S.adv.to || '9999')); }
 function advFmt(t) {
   return String(t || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean).map(p => {
     const q = p.startsWith('>'), x = esc(q ? p.replace(/^>\s?/, '') : p).replace(/\*\*(.+?)\*\*/g, (m, y) => y.length <= 2 ? `<b class="l">${y}</b>` : `<b>${y}</b>`).replace(/\n/g, '<br>');
@@ -1650,7 +1650,7 @@ function advSync() {
 }
 function renderAdv() {
   const a = S.adv, t = todayStr(), by = {}; a.ds.forEach(d => { by[d[0]] = d; });
-  const newest = Math.max(...a.ds.map(d => d[0])); if (!by[ui.advN]) ui.advN = newest;
+  const newest = a.ds.length ? Math.max(...a.ds.map(d => d[0])) : 0; if (!by[ui.advN]) ui.advN = newest;
   $('advTitle').textContent = a.t || 'Adventskalender';
   let g = '';
   for (let n = 1; n <= 24; n++) { const d = by[n]; g += d ? `<button class="advd ${n === newest ? 't' : 'o'}${n === ui.advN ? ' sel' : ''}" data-an="${n}">${n}<small>${ADV_I[d[1]] || '📖'}</small></button>` : `<div class="advd z">${n}</div>`; }
@@ -1661,13 +1661,18 @@ function renderAdv() {
   $('advWord').innerHTML = Array.from({ length: a.w || 0 }, (_, i) => `<span${L[i] ? ' class="f"' : ''}>${esc(L[i] || '')}</span>`).join('');
   $('advWordInfo').textContent = `${Math.min(L.length, a.w || 0)} von ${a.w || 0} Buchstaben gefunden`;
   $('advAllBtn').parentNode.hidden = !a.ds.some(d => d[1] === 'story');
+  if (!a.ds.length) {   // noch kein Türchen offen: Vorfreude-Ansicht
+    const st = a.from || '', days = st ? Math.round((new Date(st + 'T00:00') - new Date(t + 'T00:00')) / 864e5) : 0;
+    $('advDoor').innerHTML = `<div style="text-align:center;padding:24px 8px"><div style="font-size:4rem">🎄</div><h2 style="margin:8px 0">${days > 0 ? `Noch ${days} ${days === 1 ? 'Tag' : 'Tage'}!` : 'Gleich geht es los!'}</h2><p class="advleg" style="font-size:1rem">${days > 0 ? `Am ${esc(fmtDW(st))} öffnet sich das erste Türchen.` : 'Das erste Türchen öffnet ihr heute gemeinsam in der Klasse.'}<br>Hinter den Türchen warten eine spannende Geschichte, Rätsel und Überraschungen. Bei der Geschichte entscheidet ihr mit, wie es weitergeht!</p></div>`;
+    return;
+  }
   const d = by[ui.advN], [n, k, title, intro, text, , opts, chosen, q, sol] = d;
   $('advDoor').innerHTML = `<div class="advk">Türchen ${n}</div><h2 style="margin:4px 0 10px">${esc(title)}</h2><div class="advtx">${intro ? `<p class="ai">${esc(intro)}</p>` : ''}${advFmt(text)}</div>
     ${opts ? `<h2 style="margin:16px 0 4px;font-size:1rem">${esc(q || 'Wie soll es weitergehen?')}</h2>${opts.map((o, i) => `<div class="advopt${chosen === i ? ' on' : ''}">${i + 1} · ${esc(o)}${chosen === i ? ' ✓' : ''}</div>`).join('')}<p class="advleg">${chosen >= 0 ? '🗳 So hat die Klasse entschieden.' : '🗳 Abgestimmt wird in der Klasse.'}</p>` : ''}
     ${sol ? `<div class="advsol"><b>💡 Auflösung</b><div class="advtx">${advFmt(sol)}</div></div>` : (k === 'riddle' || k === 'quiz') ? '<p class="advleg">💡 Die Auflösung gibt es morgen.</p>' : ''}`;
 }
 function advBanner() {
-  const a = S.adv, newest = Math.max(...a.ds.map(d => d[0]));
+  const a = S.adv; if (!a.ds.length) return; const newest = Math.max(...a.ds.map(d => d[0]));
   if (!$('advBan').hidden || newest <= (S.advSeen || 0) || !$('edDlg').hidden) return;
   const d = a.ds.find(x => x[0] === newest);
   $('advBanT').textContent = `Türchen ${newest} ist offen!`;
